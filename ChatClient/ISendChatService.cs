@@ -6,12 +6,10 @@ using System.Threading.Tasks;
 
 namespace ChatClient
 {
-    class Program
+    public interface ISendChatService
     {
-        static void Main(string[] args)
-        {
-            Client newClient = new Client();
-            newClient.StartClient();
-        }
+        void SendMessage(string message, string receiver);
+        void Start(string name);
+        void Stop(string name);
     }
 }

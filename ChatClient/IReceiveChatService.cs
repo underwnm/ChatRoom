@@ -6,12 +6,9 @@ using System.Threading.Tasks;
 
 namespace ChatClient
 {
-    class Program
+    public interface IReceiveChatService
     {
-        static void Main(string[] args)
-        {
-            Client newClient = new Client();
-            newClient.StartClient();
-        }
+        void ReceiveMessage(string message, string sender);
+        void SendNames(List<string> names);
     }
 }

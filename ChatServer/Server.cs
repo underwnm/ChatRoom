@@ -17,22 +17,36 @@ namespace ChatServer
         private Thread listenThread;
         TcpClient client;
         List<TcpClient> clientList = new List<TcpClient>();
-        private void StartServer()
+        public void StartServer()
         {
             listenThread = new Thread(new ThreadStart(ListenForClients));
             listenThread.Start();
         }
         private void ListenForClients()
         {
-            while (true)
+            try
             {
-                Console.WriteLine("Waiting for a connection... ");
-                client = server.AcceptTcpClient();
-                clientList.Add(client);
-                Console.WriteLine("Connected!");
-                ReceiveAllDataFromClient(client);
-                client.Close();
+                server.Start();
+                while (true)
+                {
+                    Console.WriteLine("Waiting for a connection... ");
+                    client = server.AcceptTcpClient();
+                    clientList.Add(client);
+                    Console.WriteLine("Connected!");
+                    ReceiveAllDataFromClient(client);
+                    client.Close();
+                }
             }
+            catch (SocketException e)
+            {
+                Console.WriteLine("SocketException: {0}", e);
+            }
+            finally
+            {
+                server.Stop();
+            }
+            Console.WriteLine("\nHit enter to continue...");
+            Console.Read();
         }
         private void ReceiveAllDataFromClient(TcpClient client)
         {
