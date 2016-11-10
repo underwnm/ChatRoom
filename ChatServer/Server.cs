@@ -14,15 +14,14 @@ namespace ChatServer
         private TcpListener tcpListener;
         private NetworkStream chatStream;
         private ASCIIEncoding encoder = new ASCIIEncoding();
-        private List<User> clients = new List<User>();
+        private List<User> users = new List<User>();
         public static Queue<Message> messages = new Queue<Message>();
-
         public void StartServer()
         {
             int port = 8888;
             string ip = "127.0.0.1";
             IPAddress localAddress = IPAddress.Parse(ip);
-            Console.WriteLine("Starting server on {0}:{1}", ip, port);
+            Console.WriteLine("Chat Server started on {0}:{1}", ip, port);
             tcpListener = new TcpListener(localAddress, port);
             Parallel.Invoke(ListenForClients, SendToAll);
         }
@@ -31,37 +30,15 @@ namespace ChatServer
             tcpListener.Start();
             while (true)
             {
-                TcpClient tcpClient = tcpListener.AcceptTcpClient();                
-                User newClient = GetUserName(tcpClient);
-                clients.Add(newClient);
-                Thread newClientThread = new Thread(new ThreadStart(newClient.Receiving));
-                newClientThread.Start();
+                TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                chatStream = tcpClient.GetStream();
+                User newUser = new User(chatStream);
+                Task setUsername = Task.Run(() => newUser.SetUsername());
+                Task startReceiving = Task.Run(() => newUser.Receiving());
+                users.Add(newUser);
             }
         }
-        private User GetUserName(TcpClient tcpClient)
-        {
-            chatStream = tcpClient.GetStream();
-            Send("Enter your username");
-            string userName = Receive();
-            User newClient = new User(chatStream, userName);
-            return newClient;
-        }
-        private void Send(string message)
-        {
-            int offset = 0;
-            byte[] writeBuffer = encoder.GetBytes(message);
-            Console.WriteLine("Send: {0}", message);
-            chatStream.Write(writeBuffer, offset, writeBuffer.Length);
-        }
-        private string Receive()
-        {
-            int offset = 0;
-            byte[] readBuffer = new byte[1024];
-            int numberOfBytesRead = chatStream.Read(readBuffer, offset, readBuffer.Length);
-            string userName = encoder.GetString(readBuffer, offset, numberOfBytesRead);
-            return userName;
-        }
-        public void SendToAll()
+        private void SendToAll()
         {
             while (true)
             {
@@ -70,7 +47,7 @@ namespace ChatServer
                     byte[] writeBuffer = new byte[1024];
                     int offset = 0;
                     Message message = messages.Dequeue();
-                    foreach (User client in clients)
+                    foreach (User client in users)
                     {
                         writeBuffer = encoder.GetBytes(message.message);
                         client.stream.Write(writeBuffer, offset, writeBuffer.Length);

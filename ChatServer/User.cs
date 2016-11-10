@@ -11,10 +11,10 @@ namespace ChatServer
     {
         public string username;
         public NetworkStream stream;
-        public User(NetworkStream stream, string username)
+        private ASCIIEncoding encoder = new ASCIIEncoding();
+        public User(NetworkStream stream)
         {
             this.stream = stream;
-            this.username = username;
         }
         public void Receiving()
         {
@@ -23,13 +23,12 @@ namespace ChatServer
                 if (stream.CanRead)
                 {
                     byte[] readBuffer = new byte[1024];
-                    StringBuilder completeMessage = new StringBuilder();
-                    int numberOfBytesRead;
                     int offset = 0;
+                    StringBuilder completeMessage = new StringBuilder();
                     do
                     {
-                        numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
-                        completeMessage.Append(Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead));
+                        int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
+                        completeMessage.Append(encoder.GetString(readBuffer, offset, numberOfBytesRead));
                     }
                     while (stream.DataAvailable);
                     string message = username + ": " + completeMessage.ToString();
@@ -41,6 +40,27 @@ namespace ChatServer
                     Console.WriteLine("Sorry. The server cannot read from {0} NetworkStream", username);
                 }
             }
+        }
+        public void SetUsername()
+        {
+            SendUsernamePrompt("Enter your username");
+            ReceiveUsername();
+            string connected = username + " joined the channel";
+            Server.messages.Enqueue(new Message(connected));
+        }
+        private void SendUsernamePrompt(string message)
+        {
+            byte[] writeBuffer = encoder.GetBytes(message);
+            int offset = 0;
+            Console.WriteLine("Send: {0}", message);
+            stream.Write(writeBuffer, offset, writeBuffer.Length);
+        }
+        private void ReceiveUsername()
+        {
+            byte[] readBuffer = new byte[1024];
+            int offset = 0;
+            int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
+            username = encoder.GetString(readBuffer, offset, numberOfBytesRead);
         }
     }
 }
