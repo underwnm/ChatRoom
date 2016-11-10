@@ -52,14 +52,9 @@ namespace ChatClient
                 {
                     byte[] readBuffer = new byte[1024];
                     int offset = 0;
-                    StringBuilder completeMessage = new StringBuilder();
-                    do
-                    {
-                        int numberOfBytesRead = clientStream.Read(readBuffer, offset, readBuffer.Length);
-                        completeMessage.Append(Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead));
-                    }
-                    while (clientStream.DataAvailable);
-                    Console.WriteLine(completeMessage.ToString());
+                    int numberOfBytesRead = clientStream.Read(readBuffer, offset, readBuffer.Length);
+                    string message = Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead);
+                    Console.WriteLine(message);
                 }
                 else
                 {

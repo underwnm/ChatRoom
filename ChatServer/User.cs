@@ -52,10 +52,11 @@ namespace ChatServer
                 }
             }
         }
-        public void SetUsername()
+        public void SetUsername(Dictionary<string, User> dictionary)
         {
             SendUsernamePrompt("Enter your username");
             ReceiveUsername();
+            CheckDictionary(dictionary);
             string connected = username + " connected...";
             Server.messages.Enqueue(new Message(connected));
         }
@@ -72,6 +73,19 @@ namespace ChatServer
             int offset = 0;
             int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
             username = encoder.GetString(readBuffer, offset, numberOfBytesRead);
+        }
+        private void CheckDictionary(Dictionary<string, User> dictionary)
+        {
+            if (!dictionary.ContainsKey(username))
+            {
+                dictionary.Add(username, this);
+            }
+            else
+            {
+                SendUsernamePrompt("Username already in use! Please pick Another...");
+                ReceiveUsername();
+                CheckDictionary(dictionary);
+            }
         }
     }
 }

@@ -39,11 +39,10 @@ namespace ChatServer
         private void AddNewUser()
         {
             User newUser = new User(chatStream);
-            Task setUsername = Task.Run(() => newUser.SetUsername());
+            Task setUsername = Task.Run(() => newUser.SetUsername(dictionary));
             setUsername.Wait();
             Task startReceiving = Task.Run(() => newUser.Receiving());
             users.Add(newUser);
-            dictionary.Add(newUser.username, newUser);
         }
         private void SendToAll()
         {
