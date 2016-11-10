@@ -14,50 +14,16 @@ namespace ChatClient
         TcpClient client;
         NetworkStream clientStream;
         ASCIIEncoding encoder = new ASCIIEncoding();
-        byte[] buffer = new byte[4096];
         private int port = 8888;
         private string server = "127.0.0.1";
         public void StartClient()
         {
             client = new TcpClient(server, port);
             Console.WriteLine("CONNECTED TO SERVER!");
-            Parallel.Invoke(ReceiveMessage, SendMessage);
-            //Connect();
+            Parallel.Invoke(Receiving, SendMessage);
         }
-        //private void Connect()
-        //{
-        //    try
-        //    {
-        //        while (true)
-        //        {
-        //            string message = GetUserInput();
-        //            Byte[] data = Encoding.ASCII.GetBytes(message);
-        //            NetworkStream stream = client.GetStream();
-        //            stream.Write(data, 0, data.Length);
-        //            Console.WriteLine("Sent: {0}", message);
-        //            data = new Byte[256];
-        //            String responseData = String.Empty;
-        //            Int32 bytes = stream.Read(data, 0, data.Length);
-        //            responseData = Encoding.ASCII.GetString(data, 0, bytes);
-        //            Console.WriteLine("Received: {0}", responseData);
-        //        }
-        //        //stream.Close();
-        //        //newClient.Close();
-        //    }
-        //    catch (ArgumentNullException e)
-        //    {
-        //        Console.WriteLine("ArgumentNullException: {0}", e);
-        //    }
-        //    catch (SocketException e)
-        //    {
-        //        Console.WriteLine("SocketException: {0}", e);
-        //    }
-        //    Console.WriteLine("\n Press Enter to continue...");
-        //    Console.Read();
-        //} 
         private string EnterMessage()
         {
-            Console.WriteLine("Type Message: ");
             string userInput = Console.ReadLine();
             return userInput;
         }
@@ -66,28 +32,39 @@ namespace ChatClient
             while (true)
             {
                 string message = EnterMessage();
-                clientStream = client.GetStream();
-                buffer = encoder.GetBytes(message);
-                clientStream.Write(buffer, 0, buffer.Length);
-                clientStream.Flush();
+                if (message != "")
+                {
+                    int offset = 0;
+                    byte[] writeBuffer = new byte[1024];
+                    clientStream = client.GetStream();
+                    writeBuffer = encoder.GetBytes(message);
+                    clientStream.Write(writeBuffer, offset, writeBuffer.Length);
+                }
             }
         }
-        private void ReceiveMessage()
+        private void Receiving()
         {
             clientStream = client.GetStream();
-            int i;
-            string data;
-
             while (true)
             {
-                i = 0;
-                i = clientStream.Read(buffer, 0, buffer.Length);
-                if (i == 0)
+                if (clientStream.CanRead)
                 {
-                    break;
+                    byte[] readBuffer = new byte[1024];
+                    StringBuilder completeMessage = new StringBuilder();
+                    int numberOfBytesRead;
+                    int offset = 0;
+                    do
+                    {
+                        numberOfBytesRead = clientStream.Read(readBuffer, offset, readBuffer.Length);
+                        completeMessage.Append(Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead));
+                    }
+                    while (clientStream.DataAvailable);
+                    Console.WriteLine(completeMessage.ToString());
                 }
-                data = encoder.GetString(buffer, 0, i);
-                Console.WriteLine("Received: {0}", data);
+                else
+                {
+                    Console.WriteLine("Sorry. You cannot read from this NetworkStream.");
+                }
             }
         }
     }

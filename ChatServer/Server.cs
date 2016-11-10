@@ -11,18 +11,18 @@ namespace ChatServer
 {
     public class Server
     {
-        private Thread listenThread;
         private TcpListener tcpListener;
+        private NetworkStream chatStream;
         private ASCIIEncoding encoder = new ASCIIEncoding();
-        //public Dictionary<DateTime, string> users = new Dictionary<DateTime, string>();
-        private List<Client> clients = new List<Client>();
+        private List<User> clients = new List<User>();
         public static Queue<Message> messages = new Queue<Message>();
 
         public void StartServer()
         {
             int port = 8888;
-            IPAddress localAddress = IPAddress.Parse("127.0.0.1");
-            Console.WriteLine("Starting server on port: {0}", port);
+            string ip = "127.0.0.1";
+            IPAddress localAddress = IPAddress.Parse(ip);
+            Console.WriteLine("Starting server on {0}:{1}", ip, port);
             tcpListener = new TcpListener(localAddress, port);
             Parallel.Invoke(ListenForClients, SendToAll);
         }
@@ -31,46 +31,51 @@ namespace ChatServer
             tcpListener.Start();
             while (true)
             {
-                Console.WriteLine("Waiting for connection...");
-                TcpClient client = tcpListener.AcceptTcpClient();                
-                Client newClient = GetUserName(client);
+                TcpClient tcpClient = tcpListener.AcceptTcpClient();                
+                User newClient = GetUserName(tcpClient);
                 clients.Add(newClient);
                 Thread newClientThread = new Thread(new ThreadStart(newClient.Receiving));
                 newClientThread.Start();
             }
         }
-        private Client GetUserName(TcpClient client)
+        private User GetUserName(TcpClient tcpClient)
         {
-            NetworkStream chatStream = client.GetStream();
-            string message = "Enter your username";
-            byte[] data = encoder.GetBytes(message);
-            Console.WriteLine("Send: {0}", message);
-            chatStream.Write(data, 0, data.Length);
-            byte[] buffer = new byte[4096];
-            int byteRead = chatStream.Read(buffer, 0, buffer.Length);
-            string userName = encoder.GetString(buffer, 0, byteRead);
-            Client newClient = new Client(chatStream, userName);
+            chatStream = tcpClient.GetStream();
+            Send("Enter your username");
+            string userName = Receive();
+            User newClient = new User(chatStream, userName);
             return newClient;
+        }
+        private void Send(string message)
+        {
+            int offset = 0;
+            byte[] writeBuffer = encoder.GetBytes(message);
+            Console.WriteLine("Send: {0}", message);
+            chatStream.Write(writeBuffer, offset, writeBuffer.Length);
+        }
+        private string Receive()
+        {
+            int offset = 0;
+            byte[] readBuffer = new byte[1024];
+            int numberOfBytesRead = chatStream.Read(readBuffer, offset, readBuffer.Length);
+            string userName = encoder.GetString(readBuffer, offset, numberOfBytesRead);
+            return userName;
         }
         public void SendToAll()
         {
             while (true)
             {
-                try
+                if (messages.Count > 0)
                 {
-                    if (messages.Count > 0)
+                    byte[] writeBuffer = new byte[1024];
+                    int offset = 0;
+                    Message message = messages.Dequeue();
+                    foreach (User client in clients)
                     {
-                        Message message = messages.Dequeue();
-                        foreach (Client client in clients)
-                        {
-                            byte[] data = encoder.GetBytes(message.message);
-                            client.stream.Write(data, 0, data.Length);
-                        }
+                        writeBuffer = encoder.GetBytes(message.message);
+                        client.stream.Write(writeBuffer, offset, writeBuffer.Length);
+                        Console.WriteLine("Sent to {0}: {1}", client.username, message.message);
                     }
-                }
-                catch
-                {
-                    Console.WriteLine("Nothing in message list");
                 }
             }
         }

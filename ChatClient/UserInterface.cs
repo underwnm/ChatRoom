@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace ChatClient
 {
-    public interface IHandleClientCommunications
+    public static class UserInterface
     {
-        void Handle(Client client);
+
     }
 }
