@@ -20,7 +20,7 @@ namespace ChatServer
         public void StartServer()
         {
             int port = 8888;
-            string ip = "127.0.0.1";
+            string ip = GetLocalIpAddress();
             IPAddress localAddress = IPAddress.Parse(ip);
             Console.WriteLine("Chat Server started on {0}:{1}", ip, port);
             tcpListener = new TcpListener(localAddress, port);
@@ -70,6 +70,18 @@ namespace ChatServer
                     }
                 }
             }
+        }
+        private string GetLocalIpAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach(var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("Local IP Address Not Found!");
         }
     }
 }

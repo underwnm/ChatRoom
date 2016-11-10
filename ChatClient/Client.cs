@@ -14,12 +14,20 @@ namespace ChatClient
         private TcpClient client;
         private NetworkStream clientStream;
         private ASCIIEncoding encoder = new ASCIIEncoding();
-        private int port = 8888;
-        private string server = "127.0.0.1";
         public void StartClient()
         {
-            client = new TcpClient(server, port);
-            Console.WriteLine("CONNECTED TO {0}:{1}", server, port);
+            try
+            {
+                string server = GetServerInfo("Enter the IP of the chat server...");
+                int port = Convert.ToInt32(GetServerInfo("Enter the port of the chat server"));
+                client = new TcpClient(server, port);
+                Console.WriteLine("CONNECTING TO {0}:{1}", server, port);
+            }
+            catch
+            {
+                Console.WriteLine("Could not find server. Please try again...");
+                StartClient();
+            }
             Parallel.Invoke(Receiving, SendMessage);
         }
         private string EnterMessage()
@@ -67,6 +75,12 @@ namespace ChatClient
             Console.SetCursorPosition(0, Console.CursorTop -1);
             Console.Write(new string(' ', Console.WindowWidth));
             Console.SetCursorPosition(0, Console.CursorTop - 1);
+        }
+        private string GetServerInfo(string message)
+        {
+            Console.WriteLine(message);
+            string userInput = EnterMessage();
+            return userInput;
         }
     }
 }
