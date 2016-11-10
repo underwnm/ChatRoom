@@ -6,14 +6,12 @@ using System.Threading.Tasks;
 
 namespace ChatServer
 {
-    class Message
+    public class Message
     {
         public string message;
-        public int sender;
-        public Message(string message, int sender)
+        public Message(string message)
         {
             this.message = message;
-            this.sender = sender;
         }
     }
 }

@@ -15,21 +15,13 @@ namespace ChatClient
         NetworkStream clientStream;
         ASCIIEncoding encoder = new ASCIIEncoding();
         byte[] buffer = new byte[4096];
-        private static int port = 8888;
-        private static string server = "127.0.0.1";
+        private int port = 8888;
+        private string server = "127.0.0.1";
         public void StartClient()
         {
             client = new TcpClient(server, port);
             Console.WriteLine("CONNECTED TO SERVER!");
-            Parallel.Invoke(() =>
-            {
-                ClientReceive();
-            },
-            () =>
-            {
-                SendMessage();
-            });
-            ClientReceive();
+            Parallel.Invoke(ReceiveMessage, SendMessage);
             //Connect();
         }
         //private void Connect()
@@ -71,37 +63,32 @@ namespace ChatClient
         }
         private void SendMessage()
         {
-            string message = EnterMessage();
-            Task send = new Task(() =>
+            while (true)
             {
+                string message = EnterMessage();
                 clientStream = client.GetStream();
                 buffer = encoder.GetBytes(message);
                 clientStream.Write(buffer, 0, buffer.Length);
                 clientStream.Flush();
-            });
-            send.Start();
+            }
         }
-        private void ClientReceive()
+        private void ReceiveMessage()
         {
             clientStream = client.GetStream();
-            Task receive = new Task(() =>
-            {
-                int i;
-                string data;
+            int i;
+            string data;
 
-                while (true)
+            while (true)
+            {
+                i = 0;
+                i = clientStream.Read(buffer, 0, buffer.Length);
+                if (i == 0)
                 {
-                    i = 0;
-                    i = clientStream.Read(buffer, 0, buffer.Length);
-                    if (i == 0)
-                    {
-                        break;
-                    }
-                    data = encoder.GetString(buffer, 0, i);
-                    Console.WriteLine("Received: {0}", data);
+                    break;
                 }
-            });
-            receive.Start();
+                data = encoder.GetString(buffer, 0, i);
+                Console.WriteLine("Received: {0}", data);
+            }
         }
     }
 }
