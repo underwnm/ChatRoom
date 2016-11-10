@@ -15,6 +15,7 @@ namespace ChatServer
         private NetworkStream chatStream;
         private ASCIIEncoding encoder = new ASCIIEncoding();
         private List<User> users = new List<User>();
+        private Dictionary<string, User> dictionary = new Dictionary<string, User>();
         public static Queue<Message> messages = new Queue<Message>();
         public void StartServer()
         {
@@ -32,11 +33,17 @@ namespace ChatServer
             {
                 TcpClient tcpClient = tcpListener.AcceptTcpClient();
                 chatStream = tcpClient.GetStream();
-                User newUser = new User(chatStream);
-                Task setUsername = Task.Run(() => newUser.SetUsername());
-                Task startReceiving = Task.Run(() => newUser.Receiving());
-                users.Add(newUser);
+                Task addNewUser = Task.Run(() => AddNewUser());
             }
+        }
+        private void AddNewUser()
+        {
+            User newUser = new User(chatStream);
+            Task setUsername = Task.Run(() => newUser.SetUsername());
+            setUsername.Wait();
+            Task startReceiving = Task.Run(() => newUser.Receiving());
+            users.Add(newUser);
+            dictionary.Add(newUser.username, newUser);
         }
         private void SendToAll()
         {
@@ -47,11 +54,20 @@ namespace ChatServer
                     byte[] writeBuffer = new byte[1024];
                     int offset = 0;
                     Message message = messages.Dequeue();
-                    foreach (User client in users)
+                    for (int i = 0; i < users.Count; i++)
                     {
-                        writeBuffer = encoder.GetBytes(message.message);
-                        client.stream.Write(writeBuffer, offset, writeBuffer.Length);
-                        Console.WriteLine("Sent to {0}: {1}", client.username, message.message);
+                        try
+                        {
+                            writeBuffer = encoder.GetBytes(message.message);
+                            users[i].stream.Write(writeBuffer, offset, writeBuffer.Length);
+                            Console.WriteLine("Sent to {0}: {1}", users[i].username, message.message);
+                        }
+                        catch
+                        {
+                            users[i].stream.Close();
+                            dictionary.Remove(users[i].username);
+                            users.RemoveAt(i);
+                        }
                     }
                 }
             }

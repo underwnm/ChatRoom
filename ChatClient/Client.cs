@@ -32,6 +32,7 @@ namespace ChatClient
             while (true)
             {
                 string message = EnterMessage();
+                ClearLine();
                 if (message != "")
                 {
                     byte[] writeBuffer = new byte[1024];
@@ -65,6 +66,12 @@ namespace ChatClient
                     Console.WriteLine("Sorry. You cannot read from this NetworkStream.");
                 }
             }
+        }
+        private void ClearLine()
+        {
+            Console.SetCursorPosition(0, Console.CursorTop -1);
+            Console.Write(new string(' ', Console.WindowWidth));
+            Console.SetCursorPosition(0, Console.CursorTop - 1);
         }
     }
 }

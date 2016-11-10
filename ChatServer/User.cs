@@ -18,22 +18,33 @@ namespace ChatServer
         }
         public void Receiving()
         {
-            while (true)
+            bool userLeftChat = false;
+            while (!userLeftChat)
             {
                 if (stream.CanRead)
                 {
                     byte[] readBuffer = new byte[1024];
                     int offset = 0;
                     StringBuilder completeMessage = new StringBuilder();
-                    do
+                    try
                     {
-                        int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
-                        completeMessage.Append(encoder.GetString(readBuffer, offset, numberOfBytesRead));
+                        do
+                        {
+                            int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
+                            completeMessage.Append(encoder.GetString(readBuffer, offset, numberOfBytesRead));
+                        }
+                        while (stream.DataAvailable);
+                        string message = username + ": " + completeMessage.ToString();
+                        Server.messages.Enqueue(new Message(message));
+                        Console.WriteLine("Received {0}'s message: {0}", username, completeMessage.ToString());
                     }
-                    while (stream.DataAvailable);
-                    string message = username + ": " + completeMessage.ToString();
-                    Server.messages.Enqueue(new Message(message));
-                    Console.WriteLine("Received {0}'s message: {0}", username, completeMessage.ToString());
+                    catch
+                    {
+                        string disconnected = username + " disconnected...";
+                        Server.messages.Enqueue(new Message(disconnected));
+                        Console.WriteLine(disconnected);
+                        userLeftChat = true;
+                    }
                 }
                 else
                 {
@@ -45,7 +56,7 @@ namespace ChatServer
         {
             SendUsernamePrompt("Enter your username");
             ReceiveUsername();
-            string connected = username + " joined the channel";
+            string connected = username + " connected...";
             Server.messages.Enqueue(new Message(connected));
         }
         private void SendUsernamePrompt(string message)
