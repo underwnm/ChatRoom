@@ -14,33 +14,41 @@ namespace ChatServer
         private TcpListener tcpListener;
         private NetworkStream chatStream;
         private ASCIIEncoding encoder = new ASCIIEncoding();
-        private List<User> users = new List<User>();
-        private Dictionary<string, User> dictionary = new Dictionary<string, User>();
+        public static Dictionary<string, User> dictionary = new Dictionary<string, User>();
+        public static List<User> users = new List<User>();
         public static Queue<Message> messages = new Queue<Message>();
         public void StartServer()
         {
-            int port = 8888;
+            int port = GetPortNumber("Please enter port for server");
             string ip = GetLocalIpAddress();
             IPAddress localAddress = IPAddress.Parse(ip);
+            Console.Clear();
             Console.WriteLine("Chat Server started on {0}:{1}", ip, port);
             tcpListener = new TcpListener(localAddress, port);
             Parallel.Invoke(ListenForClients, SendToAll);
         }
         private void ListenForClients()
         {
-            tcpListener.Start();
+            try
+            {
+                tcpListener.Start();
+            }
+            catch (SocketException)
+            {
+                Console.WriteLine("Already a server listening on this port");
+                StartServer();
+            }
             while (true)
             {
                 TcpClient tcpClient = tcpListener.AcceptTcpClient();
                 chatStream = tcpClient.GetStream();
-                Task addNewUser = Task.Run(() => AddNewUser());
+                Task addNewUser = Task.Run(() => AddNewUser(tcpClient));
             }
         }
-        private void AddNewUser()
+        private void AddNewUser(TcpClient tcpClient)
         {
-            User newUser = new User(chatStream);
-            Task setUsername = Task.Run(() => newUser.SetUsername(dictionary));
-            setUsername.Wait();
+            User newUser = new User(tcpClient, chatStream);
+            newUser.SetUsername(dictionary);
             Task startReceiving = Task.Run(() => newUser.Receiving());
             users.Add(newUser);
         }
@@ -55,18 +63,9 @@ namespace ChatServer
                     Message message = messages.Dequeue();
                     for (int i = 0; i < users.Count; i++)
                     {
-                        try
-                        {
-                            writeBuffer = encoder.GetBytes(message.message);
-                            users[i].stream.Write(writeBuffer, offset, writeBuffer.Length);
-                            Console.WriteLine("Sent to {0}: {1}", users[i].username, message.message);
-                        }
-                        catch
-                        {
-                            users[i].stream.Close();
-                            dictionary.Remove(users[i].username);
-                            users.RemoveAt(i);
-                        }
+                        writeBuffer = encoder.GetBytes(message.message);
+                        users[i].stream.Write(writeBuffer, offset, writeBuffer.Length);
+                        Console.WriteLine("Sent to {0}: {1}", users[i].username, message.message);
                     }
                 }
             }
@@ -82,6 +81,17 @@ namespace ChatServer
                 }
             }
             throw new Exception("Local IP Address Not Found!");
+        }
+        private int GetPortNumber(string message)
+        {
+            Console.WriteLine(message);
+            int userInput;
+            int.TryParse(Console.ReadLine(), out userInput);
+            if(userInput < 65535 && userInput > 0)
+            {
+                return userInput;
+            }
+            return GetPortNumber("Invalid port entered... Please Re-enter a valid port...");
         }
     }
 }

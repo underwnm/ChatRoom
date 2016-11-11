@@ -21,10 +21,12 @@ namespace ChatClient
                 string server = GetServerInfo("Enter the IP of the chat server...");
                 int port = Convert.ToInt32(GetServerInfo("Enter the port of the chat server"));
                 client = new TcpClient(server, port);
-                Console.WriteLine("CONNECTING TO {0}:{1}", server, port);
+                Console.Clear();
+                Console.WriteLine("CONNECTED TO {0}:{1}", server, port);
             }
             catch
             {
+                Console.Clear();
                 Console.WriteLine("Could not find server. Please try again...");
                 StartClient();
             }

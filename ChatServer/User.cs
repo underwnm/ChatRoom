@@ -11,9 +11,11 @@ namespace ChatServer
     {
         public string username;
         public NetworkStream stream;
+        public TcpClient tcpClient;
         private ASCIIEncoding encoder = new ASCIIEncoding();
-        public User(NetworkStream stream)
+        public User(TcpClient tcpClient, NetworkStream stream)
         {
+            this.tcpClient = tcpClient;
             this.stream = stream;
         }
         public void Receiving()
@@ -21,34 +23,31 @@ namespace ChatServer
             bool userLeftChat = false;
             while (!userLeftChat)
             {
-                if (stream.CanRead)
+                try
                 {
                     byte[] readBuffer = new byte[1024];
                     int offset = 0;
                     StringBuilder completeMessage = new StringBuilder();
-                    try
+                    do
                     {
-                        do
-                        {
-                            int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
-                            completeMessage.Append(encoder.GetString(readBuffer, offset, numberOfBytesRead));
-                        }
-                        while (stream.DataAvailable);
-                        string message = username + ": " + completeMessage.ToString();
-                        Server.messages.Enqueue(new Message(message));
-                        Console.WriteLine("Received {0}'s message: {0}", username, completeMessage.ToString());
+                        int numberOfBytesRead = stream.Read(readBuffer, offset, readBuffer.Length);
+                        completeMessage.Append(encoder.GetString(readBuffer, offset, numberOfBytesRead));
                     }
-                    catch
-                    {
-                        string disconnected = username + " disconnected...";
-                        Server.messages.Enqueue(new Message(disconnected));
-                        Console.WriteLine(disconnected);
-                        userLeftChat = true;
-                    }
+                    while (stream.DataAvailable);
+                    string message = username + ": " + completeMessage.ToString();
+                    Server.messages.Enqueue(new Message(message));
+                    Console.WriteLine("Received {0}'s message: {0}", username, completeMessage.ToString());
                 }
-                else
+                catch
                 {
-                    Console.WriteLine("Sorry. The server cannot read from {0} NetworkStream", username);
+                    string disconnected = username + " disconnected...";
+                    stream.Close();
+                    tcpClient.Close();
+                    Server.users.Remove(this);
+                    Server.dictionary.Remove(username);
+                    Server.messages.Enqueue(new Message(disconnected));
+                    Console.WriteLine(disconnected);
+                    userLeftChat = true;
                 }
             }
         }
