@@ -58,17 +58,28 @@ namespace ChatClient
             clientStream = client.GetStream();
             while (true)
             {
-                if (clientStream.CanRead)
+                try
                 {
-                    byte[] readBuffer = new byte[1024];
-                    int offset = 0;
-                    int numberOfBytesRead = clientStream.Read(readBuffer, offset, readBuffer.Length);
-                    string message = Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead);
-                    Console.WriteLine(message);
+                    if (clientStream.CanRead)
+                    {
+                        byte[] readBuffer = new byte[1024];
+                        int offset = 0;
+                        int numberOfBytesRead = clientStream.Read(readBuffer, offset, readBuffer.Length);
+                        string message = Encoding.ASCII.GetString(readBuffer, offset, numberOfBytesRead);
+                        Console.WriteLine(message);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Sorry. You cannot read from this NetworkStream.");
+                    }
                 }
-                else
+                catch
                 {
-                    Console.WriteLine("Sorry. You cannot read from this NetworkStream.");
+                    Console.WriteLine("Server Crashed...");
+                    Console.WriteLine("Hit any key to restart program");
+                    Console.ReadKey();
+                    Console.Clear();
+                    StartClient();
                 }
             }
         }

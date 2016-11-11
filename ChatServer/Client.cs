@@ -64,6 +64,9 @@ namespace ChatServer
                     while (stream.DataAvailable);
                     string message = username + ": " + completeMessage.ToString();
                     Server.messages.Enqueue(new Message(message, this));
+                    ILogger log = new MessageLogger();
+                    string sender = username.ToUpper() + ": " + message;
+                    log.WriteToConsole(sender);
                 }
                 catch
                 {

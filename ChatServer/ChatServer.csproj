@@ -43,10 +43,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientConnectLogger.cs" />
+    <Compile Include="ClientDisconnectLogger.cs" />
+    <Compile Include="ErrorLogger.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="ISubject.cs" />
     <Compile Include="IObserver.cs" />
-    <Compile Include="Output.cs" />
+    <Compile Include="MessageLogger.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Program.cs" />

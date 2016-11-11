@@ -14,7 +14,7 @@ namespace ChatServer
         private TcpListener tcpListener;
         private NetworkStream chatStream;
         public static Dictionary<string, Client> clientDictionary = new Dictionary<string, Client>();
-        public static Queue<Message> messages = new Queue<Message>();
+        public static Queue<Message> messages = new Queue<Message>();      
         public void StartServer()
         {
             int port = GetPortNumber("Please enter port for server");
@@ -33,7 +33,8 @@ namespace ChatServer
             }
             catch (SocketException)
             {
-                Console.WriteLine("Already a server listening on this port");
+                ILogger log = new ErrorLogger();
+                log.WriteToConsole("Already a server listening on this port");
                 StartServer();
             }
             while (true)
@@ -75,17 +76,19 @@ namespace ChatServer
         }
         public void Connect(Client client)
         {
+            ILogger log = new ClientConnectLogger();
             clientDictionary.Add(client.username, client);
-            string connected = client.username + " connected...";
-            Console.WriteLine(connected);
-            messages.Enqueue(new Message(connected, client));
+            string message = client.username + " connected...";
+            log.WriteToConsole(client.username.ToUpper());
+            messages.Enqueue(new Message(message, client));
         }
         public static void Disconnect(Client client)
         {
+            ILogger log = new ClientDisconnectLogger();
             clientDictionary.Remove(client.username);
-            string disconnected = client.username + " disconnected...";
-            Console.WriteLine(disconnected);
-            messages.Enqueue(new Message(disconnected, client));
+            string message = client.username + " disconnected...";
+            log.WriteToConsole(client.username.ToUpper());
+            messages.Enqueue(new Message(message, client));
         }
         public void NotifyAll()
         {

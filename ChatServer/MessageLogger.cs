@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace ChatServer
 {
-    public interface ILogger
+    class MessageLogger : ILogger
     {
-        void WriteToConsole(string message);
+        public void WriteToConsole(string message)
+        {
+            Console.WriteLine("[MESSAGE] {0}", message);
+        }
     }
 }
