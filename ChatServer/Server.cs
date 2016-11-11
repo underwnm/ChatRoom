@@ -9,23 +9,21 @@ using System.Threading;
 
 namespace ChatServer
 {
-    public class Server
+    public class Server : ISubject
     {
         private TcpListener tcpListener;
         private NetworkStream chatStream;
-        private ASCIIEncoding encoder = new ASCIIEncoding();
-        public static Dictionary<string, User> dictionary = new Dictionary<string, User>();
-        public static List<User> users = new List<User>();
+        public static Dictionary<string, Client> clientDictionary = new Dictionary<string, Client>();
         public static Queue<Message> messages = new Queue<Message>();
         public void StartServer()
         {
             int port = GetPortNumber("Please enter port for server");
-            string ip = GetLocalIpAddress();
+            string ip = FindLocalIpAddress();
             IPAddress localAddress = IPAddress.Parse(ip);
             Console.Clear();
             Console.WriteLine("Chat Server started on {0}:{1}", ip, port);
             tcpListener = new TcpListener(localAddress, port);
-            Parallel.Invoke(ListenForClients, SendToAll);
+            Parallel.Invoke(ListenForClients, NotifyAll);
         }
         private void ListenForClients()
         {
@@ -42,35 +40,17 @@ namespace ChatServer
             {
                 TcpClient tcpClient = tcpListener.AcceptTcpClient();
                 chatStream = tcpClient.GetStream();
-                Task addNewUser = Task.Run(() => AddNewUser(tcpClient));
+                Task addNewUser = Task.Run(() => HandleNewClient(tcpClient));
             }
         }
-        private void AddNewUser(TcpClient tcpClient)
+        private void HandleNewClient(TcpClient tcpClient)
         {
-            User newUser = new User(tcpClient, chatStream);
-            newUser.SetUsername(dictionary);
-            Task startReceiving = Task.Run(() => newUser.Receiving());
-            users.Add(newUser);
+            Client newClient = new Client(tcpClient, chatStream);
+            newClient.SetUsername();
+            Task startReceiving = Task.Run(() => newClient.Receiving());
+            Connect(newClient);
         }
-        private void SendToAll()
-        {
-            while (true)
-            {
-                if (messages.Count > 0)
-                {
-                    byte[] writeBuffer = new byte[1024];
-                    int offset = 0;
-                    Message message = messages.Dequeue();
-                    for (int i = 0; i < users.Count; i++)
-                    {
-                        writeBuffer = encoder.GetBytes(message.message);
-                        users[i].stream.Write(writeBuffer, offset, writeBuffer.Length);
-                        Console.WriteLine("Sent to {0}: {1}", users[i].username, message.message);
-                    }
-                }
-            }
-        }
-        private string GetLocalIpAddress()
+        private string FindLocalIpAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach(var ip in host.AddressList)
@@ -92,6 +72,34 @@ namespace ChatServer
                 return userInput;
             }
             return GetPortNumber("Invalid port entered... Please Re-enter a valid port...");
+        }
+        public void Connect(Client client)
+        {
+            clientDictionary.Add(client.username, client);
+            string connected = client.username + " connected...";
+            Console.WriteLine(connected);
+            messages.Enqueue(new Message(connected, client));
+        }
+        public static void Disconnect(Client client)
+        {
+            clientDictionary.Remove(client.username);
+            string disconnected = client.username + " disconnected...";
+            Console.WriteLine(disconnected);
+            messages.Enqueue(new Message(disconnected, client));
+        }
+        public void NotifyAll()
+        {
+            while (true)
+            {
+                if (messages.Count > 0)
+                {
+                    Message message = messages.Dequeue();
+                    foreach (Client entry in clientDictionary.Values)
+                    {
+                        entry.Update(message.message);
+                    }
+                }
+            }
         }
     }
 }
