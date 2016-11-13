@@ -33,8 +33,7 @@ namespace ChatServer
             }
             catch (SocketException)
             {
-                ILogger log = new ErrorLogger();
-                log.WriteToConsole("Already a server listening on this port");
+                Console.WriteLine("Already a server listening on this port");
                 StartServer();
             }
             while (true)
@@ -50,6 +49,8 @@ namespace ChatServer
             newClient.SetUsername();
             Task startReceiving = Task.Run(() => newClient.Receiving());
             Connect(newClient);
+            startReceiving.Wait();
+            Disconnect(newClient);
         }
         private string FindLocalIpAddress()
         {
@@ -82,7 +83,7 @@ namespace ChatServer
             log.WriteToConsole(client.username.ToUpper());
             messages.Enqueue(new Message(message, client));
         }
-        public static void Disconnect(Client client)
+        public void Disconnect(Client client)
         {
             ILogger log = new ClientDisconnectLogger();
             clientDictionary.Remove(client.username);

@@ -65,14 +65,12 @@ namespace ChatServer
                     string message = username + ": " + completeMessage.ToString();
                     Server.messages.Enqueue(new Message(message, this));
                     ILogger log = new MessageLogger();
-                    string sender = username.ToUpper() + ": " + message;
-                    log.WriteToConsole(sender);
+                    log.WriteToConsole(message);
                 }
                 catch
                 {
                     stream.Close();
                     tcpClient.Close();
-                    Server.Disconnect(this);
                     clientInChannel = false;
                 }
             }

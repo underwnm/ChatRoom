@@ -9,7 +9,7 @@ namespace ChatServer
     public interface ISubject
     {
         void Connect(Client client);
-        //void Disconnect(Client client);
+        void Disconnect(Client client);
         void NotifyAll();
     }
 }

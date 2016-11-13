@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="ClientConnectLogger.cs" />
     <Compile Include="ClientDisconnectLogger.cs" />
-    <Compile Include="ErrorLogger.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="ISubject.cs" />
     <Compile Include="IObserver.cs" />
