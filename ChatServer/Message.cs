@@ -9,11 +9,9 @@ namespace ChatServer
     public class Message
     {
         public string message;
-        public Client sender;
-        public Message(string message, Client sender)
+        public Message(string message)
         {
             this.message = message;
-            this.sender = sender;
         }
     }
 }

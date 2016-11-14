@@ -25,6 +25,29 @@ namespace ChatServer
             tcpListener = new TcpListener(localAddress, port);
             Parallel.Invoke(ListenForClients, NotifyAll);
         }
+        private int GetPortNumber(string message)
+        {
+            Console.WriteLine(message);
+            int userInput;
+            int.TryParse(Console.ReadLine(), out userInput);
+            if (userInput < 65535 && userInput > 0)
+            {
+                return userInput;
+            }
+            return GetPortNumber("Invalid port entered... Please Re-enter a valid port...");
+        }
+        private string FindLocalIpAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("Local IP Address Not Found!");
+        }
         private void ListenForClients()
         {
             try
@@ -40,40 +63,17 @@ namespace ChatServer
             {
                 TcpClient tcpClient = tcpListener.AcceptTcpClient();
                 chatStream = tcpClient.GetStream();
-                Task addNewUser = Task.Run(() => HandleNewClient(tcpClient));
+                Task addNewUser = Task.Run(() => HandleClient(tcpClient));
             }
         }
-        private void HandleNewClient(TcpClient tcpClient)
+        private void HandleClient(TcpClient tcpClient)
         {
-            Client newClient = new Client(tcpClient, chatStream);
-            newClient.SetUsername();
-            Task startReceiving = Task.Run(() => newClient.Receiving());
-            Connect(newClient);
+            Client client = new Client(tcpClient, chatStream);
+            client.SetUsername();
+            Task startReceiving = Task.Run(() => client.Receiving());
+            Connect(client);
             startReceiving.Wait();
-            Disconnect(newClient);
-        }
-        private string FindLocalIpAddress()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach(var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("Local IP Address Not Found!");
-        }
-        private int GetPortNumber(string message)
-        {
-            Console.WriteLine(message);
-            int userInput;
-            int.TryParse(Console.ReadLine(), out userInput);
-            if(userInput < 65535 && userInput > 0)
-            {
-                return userInput;
-            }
-            return GetPortNumber("Invalid port entered... Please Re-enter a valid port...");
+            Disconnect(client);
         }
         public void Connect(Client client)
         {
@@ -81,7 +81,7 @@ namespace ChatServer
             clientDictionary.Add(client.username, client);
             string message = client.username + " connected...";
             log.WriteToConsole(client.username.ToUpper());
-            messages.Enqueue(new Message(message, client));
+            messages.Enqueue(new Message(message));
         }
         public void Disconnect(Client client)
         {
@@ -89,7 +89,7 @@ namespace ChatServer
             clientDictionary.Remove(client.username);
             string message = client.username + " disconnected...";
             log.WriteToConsole(client.username.ToUpper());
-            messages.Enqueue(new Message(message, client));
+            messages.Enqueue(new Message(message));
         }
         public void NotifyAll()
         {

@@ -18,8 +18,8 @@ namespace ChatClient
         {
             try
             {
-                string server = GetServerInfo("Enter the IP of the chat server...");
-                int port = Convert.ToInt32(GetServerInfo("Enter the port of the chat server"));
+                string server = GetServerIp("Enter the IP of the chat server...");
+                int port = GetPortNumber("Enter the port of the chat server");
                 client = new TcpClient(server, port);
                 Console.Clear();
                 Console.WriteLine("CONNECTED TO {0}:{1}", server, port);
@@ -75,13 +75,17 @@ namespace ChatClient
                 }
                 catch
                 {
-                    Console.WriteLine("Server Crashed...");
-                    Console.WriteLine("Hit any key to restart program");
-                    Console.ReadKey();
-                    Console.Clear();
-                    StartClient();
+                    DisplayServerCrashed();
                 }
             }
+        }
+        private void DisplayServerCrashed()
+        {
+            Console.WriteLine("Server Crashed...");
+            Console.WriteLine("Hit any key to restart program");
+            Console.ReadKey();
+            Console.Clear();
+            StartClient();
         }
         private void ClearLine()
         {
@@ -89,11 +93,22 @@ namespace ChatClient
             Console.Write(new string(' ', Console.WindowWidth));
             Console.SetCursorPosition(0, Console.CursorTop - 1);
         }
-        private string GetServerInfo(string message)
+        private string GetServerIp(string message)
         {
             Console.WriteLine(message);
             string userInput = EnterMessage();
             return userInput;
+        }
+        private int GetPortNumber(string message)
+        {
+            Console.WriteLine(message);
+            int userInput;
+            int.TryParse(Console.ReadLine(), out userInput);
+            if (userInput < 65535 && userInput > 0)
+            {
+                return userInput;
+            }
+            return GetPortNumber("Invalid port entered... Please Re-enter a valid port...");
         }
     }
 }

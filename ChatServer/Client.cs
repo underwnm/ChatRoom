@@ -48,8 +48,8 @@ namespace ChatServer
         }
         public void Receiving()
         {
-            bool clientInChannel = true;
-            while (clientInChannel)
+            bool inChatChannel = true;
+            while (inChatChannel)
             {
                 try
                 {
@@ -63,7 +63,7 @@ namespace ChatServer
                     }
                     while (stream.DataAvailable);
                     string message = username + ": " + completeMessage.ToString();
-                    Server.messages.Enqueue(new Message(message, this));
+                    Server.messages.Enqueue(new Message(message));
                     ILogger log = new MessageLogger();
                     log.WriteToConsole(message);
                 }
@@ -71,7 +71,7 @@ namespace ChatServer
                 {
                     stream.Close();
                     tcpClient.Close();
-                    clientInChannel = false;
+                    inChatChannel = false;
                 }
             }
         }
