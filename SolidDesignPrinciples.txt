@@ -1,0 +1,5 @@
+Dependency Inversion Principle
+I used Ilogger interface so that I could call any of my logging messages. I had a ClientConnectLogger, ClientDisconnectLogger, and MessageLogger. This way when I wanted log to the server I could call the right logger for the job. Having dependencies based on interfaces created greater stability in my code.
+
+Single Responsibility Principle
+Instead of having a send and receive loop in one function. I broke them out into two separate functions that each had their own loop for sending and receiving. I then called them at different times from another function that was just to watch for new listeningclients. 
